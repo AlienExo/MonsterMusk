@@ -71,7 +71,9 @@ using System.Xml.Serialization;
  *			Glove(s)
  *			Ring(s)
  *  			
- * 	
+ * 	sensitivity stat for each body part. find the sweet spots!
+ *
+ *
  *	----
  *	INTERFACE
  *	
@@ -164,6 +166,9 @@ namespace ZhuVN{
 			
 		}
 		public List<NPC> Actors;
+		internal int NPCs = 1;
+		internal int Items = 1;
+		internal int Locations = 1;
 	}
 	
 	public class ZhuEngine{
@@ -190,11 +195,24 @@ namespace ZhuVN{
 		//Carrying capacity?
 	}
 
-	struct Musk{
+	internal class Musk{
 		//Yeah good luck describing smell in words, let alone numbers.
-		byte sex;		//increased by libido and having sex
-		byte lazy;		//increased by being lazy, and generally over time
-		byte workout;	//guess what increases this. Any type of hard work (sex too)		
+		internal byte sex = 10;		//increased by libido and having sex
+		internal byte lazy = 0;		//increased by being lazy, and generally over time
+		internal byte workout = 10;	//guess what increases this. Any type of hard work (sex too)	
+		internal ushort strength = 100;//potency of musk	
+		internal string origin;	//whose is this
+
+		internal Musk(){}
+		internal Musk(Character c){
+			this.origin = c.name;
+		}
+
+		public override string ToString()
+		{
+			return "sopping";
+			//return base.ToString();
+		}
 	}
 	
 	/// <summary>
@@ -204,61 +222,60 @@ namespace ZhuVN{
 		//todo: consider subclassing for head, torso, arms, legs, crotch                                                      
 
 		internal class Bodypart{
-			string name;		//name for text
-			string color;		//color for text output 
+			internal string name;			//name for text
+			internal string desc;			//special description, always added? todo: reference to a list/library of string/string formats so custom descriptions can be added.
+			internal string color;			//color for text output 
 			
-			//string adjective;	//name for text
-			ushort PartID;		//short ID for ref
-			ushort group;		//Location on the body. Allows grouping for growth, clothes bursting, etc.
-			
-			ushort sizeH		//size you have
+			//string adjective;		//name for text
+			ushort PartID;			//short ID for ref
+			ushort group;			//Location on the body. Allows grouping for growth, clothes bursting, etc.
+
+			internal ushort sizeH			//size you have
 				{	get{return (ushort)((this.girth + this.length)/2);}
 
 					set{ushort delta = (ushort)(value - this.sizeH); 
 						this.girth = (ushort)(this.girth + delta/2);
 						this.length = (ushort)(this.length + delta/2);}
-				} 		
-			ushort sizeW; 		//size you want
+				}
+			internal ushort sizeW; 			//size you want
 
-			ushort girth;
-			ushort length;
+			internal ushort length;			//Don't have to use. Just use generic sizeH to be neutral - this is for things where girth counts.
+			internal ushort girth;
 
+			internal ushort hairH; 			//hair have
+			internal ushort hairW; 			//hair want
 
-			ushort hairH; 		//hair have
-			ushort hairW; 		//hair want
+			internal ushort attraction;		//importance of this body part to self
 
-			ushort attraction;	//importance of this body part to self
-
-			ushort musky;		//potency of musk in this area
-			Musk musk = new Musk();			//type of musk in this area
+			internal Musk musk = new Musk();	//type of musk in this area
 
 			//utility functions
+
+			internal Bodypart(string _name, int _ID){
+				//todo - constructor w/ limits based on id, also name
+			}
 
 			internal Bodypart(string _name){
 				this.name = _name;
 			}
 
-			internal Bodypart(int _ID, string _name){
-				//todo - constructor w/ limits based on id, also name
+			internal virtual string describeFull(Character owner)
+			{
+				return String.Format("You longingly gaze at {0}'s musky, muscular, {1}.\n", owner.name, this.name);
+				//todo: Long, loving description of all features.
+				//throw new NotImplementedException();
 			}
 
-			internal virtual string describeFull()
+			internal virtual string describePart(Character owner)
 			{
-				throw new NotImplementedException();
-			}
-
-			internal virtual string describePart(Bodypart b)
-			{
-				
-				return String.Format("You longingly gaze at that {0}.", this.name);
-				//todo: get b.name from this NPC's body object, describe
+				return String.Format("You longingly gaze at {0}'s {1}.\n", owner.name, this.name);
+				//todo: smaller, shorter, more compact description - one line. From a collection so they vary.
 				//throw new NotImplementedException();
 			}
 		}
 
 		internal class Muscle : Bodypart{
 			ushort density;		//is it just big or is it also solid?
-
 			internal Muscle(string name) : base(name){}
 		}
 
@@ -269,6 +286,12 @@ namespace ZhuVN{
 			ushort Refractory;	//This isn't your fanfics. Prostates need to reload 'tween uses.
 
 			internal Prostate(string name) : base(name){}
+
+			internal override string describePart(Character owner)
+			{
+				return String.Format("From what you can feel, {0}'s prostate is a {1} lump, \nlocated about {2} up and {3} left inside {4}'s {5} {6}.\n", owner.name, "fat", owner.body.crotch.prostate.LocationX, owner.body.crotch.prostate.LocationY, owner.name, owner.body.crotch.pucker.musk.ToString(), owner.body.crotch.pucker.name);
+				//return base.describePart(charname);
+			}
 		}
 
 		internal class Testicles : Bodypart
@@ -279,7 +302,7 @@ namespace ZhuVN{
 
 			public ushort calcProduction(Character c, int timeDelta)
 			{
-				throw new NotImplementedException("Cum production not yet implemented.");
+				throw new NotImplementedException("Cum production not yet implemented.\n");
 				//timeDelta * production / 24
 			}
 			internal Testicles(string name) : base(name){}
@@ -289,15 +312,30 @@ namespace ZhuVN{
 		{
 			ushort girthH;
 			ushort girthW;
+			string shape;	//siiigh
 			internal Penis(string name) : base(name){}
 		}
 
 		internal class Pucker : Bodypart
 		{
-			internal ushort aCapacity;
-			internal byte aProtrusion;
-			internal byte aMoisture;
+			internal ushort capacity;
+			internal byte protrusion;
+			internal byte moisture;
+			internal byte gape;
+			internal List<Musk> visitors = new List<Musk>();
 			internal Pucker(string name) : base(name){}
+
+			internal override string describePart(Character owner)
+			{
+				string result = base.describePart(owner);
+				//todo: Add Perception code.
+				if (this.visitors.Count>0){
+					for (int i=0; i<visitors.Count; i++){
+						result += String.Format(" You can smell {0}'s musk pour out of {1}'s {2}.\n", this.visitors[i].origin, owner.name, this.name);
+					}
+				}
+				return result;
+			}
 		}
 
 		internal class Nipples : Bodypart
@@ -322,10 +360,12 @@ namespace ZhuVN{
 			internal Bodypart lowerLip = new Bodypart("lower lip");
 			internal Bodypart upperLip = new Bodypart("upper lip");
 		}
+
 		internal class Chest {
 			internal Muscle Pecs = new Muscle("pecs");
 
 		}
+
 		internal class Arms{
 			internal Muscle Biceps = new Muscle("biceps");
 			internal Muscle Triceps = new Muscle("triceps");
@@ -340,25 +380,71 @@ namespace ZhuVN{
 		{
 			internal List<Penis> dicks = new List<Penis>();
 			internal List<Testicles> balls = new List<Testicles>();
+			internal Prostate prostate = new Prostate("throbbing");
 			internal Pucker pucker = new Pucker("puffy, swollen black pucker");
-			internal Muscle glutes = new Muscle("arse");
+			internal Muscle glutes = new Muscle("meaty arse");
 
 			internal Crotch(){
-				dicks.Add(new Penis("dick"));
-				balls.Add(new Testicles("nuts"));
+				dicks.Add(new Penis("turgid fucker"));
+				balls.Add(new Testicles("musk-dripping cum factories"));
 			}
 		}
 
-		internal ushort sweatiness;
 		internal Musk musk = new Musk();
-		internal Head head = new Head();
-		internal Chest chest = new Chest();
-		internal Arms arms = new Arms();
-		internal Crotch crotch = new Crotch();
-		internal Legs legs = new Legs();
+
+		private float _height;
+		internal float height{
+			get{
+				if (true) { return _height; } //todo: String.Format("{0:0.0}",  code: game.Settings.Metric
+
+				else{
+					float d, m;
+					d = (_height/0.3048f); //0.3048 metre = 1 foot
+					m = (_height%0.3048f);
+					m = (m/2.54f);
+					return d + m/10;
+				}	
+			}
+			set{}
+		} 
+		private float _weight;
+		internal float weight{
+			get{
+				if (true) { return _weight; } //game.Settings.Metric
+				else{return _weight * 2.2046f;} //1 kg = 2.2046lbs
+			}
+			set{
+			
+			}
+		}
+
+		internal Head head;
+		internal Chest chest;
+		internal Arms arms;
+		internal Crotch crotch;
+		internal Legs legs;
+
+		internal string describePart(Character c, Bodypart b)
+		{
+			return b.describePart(c);
+		}
+
+		internal string describeFull(Character c, Bodypart b)
+		{
+			//todo: randomly-generated description of this Body
+			//todo: Accuracy of measurements depends on your perception - the less it is, the bigger the wobble
+			//todo: Pick a few parts to be described.
+			return b.describeFull(c);
+		}
+
 
 		internal Body(){
 			//todo: Constructor w/ constraints
+			this.head = new Head();
+			this.chest = new Chest();
+			this.arms = new Arms();
+			this.crotch = new Crotch();
+			this.legs = new Legs();
 		}
 	}
 
@@ -499,14 +585,27 @@ namespace ZhuVN{
 		public Character(SerializationInfo info, StreamingContext context){
 			throw new NotImplementedException("Character deserialization not implemented. Todo: Make this");
 		}
+
+		internal string describePart(Body.Bodypart b)
+		{
+			return this.body.describePart(this, b);
+		}
+
+		internal string describe(Body.Bodypart b)
+		{
+			//todo: randomly-generated description of this Body
+			//todo: Accuracy of measurements depends on your perception - the less it is, the bigger the wobble
+			//todo: Pick a few parts to be described.
+			return this.body.describeFull(this, b);
+		}
 		
 		internal Character() //Debug constructor, maketh a Zhu
 		{
 			this.gender = 0;
 			this.name = "Zhu";
 			this.species = "Beast";
-			this.body.sweatiness = 255;
-			this.body.crotch.pucker.aProtrusion = 10;
+			this.body.musk.sex = 255;
+			this.body.crotch.pucker.protrusion = 10;
 		}
 	}
 
@@ -514,7 +613,7 @@ namespace ZhuVN{
 	{
 		//Schedule - her on in location?
 		//Inventory
-		int CharID;
+		static int CharID;
 
 		public override void GetObjectData(SerializationInfo info, StreamingContext context){
 			throw new NotImplementedException ("NPC Serialization not implemented. TODO: Work out a flag structure, then this and base GetObjectData?");

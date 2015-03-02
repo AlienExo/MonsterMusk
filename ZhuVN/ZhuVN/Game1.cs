@@ -10,6 +10,11 @@ namespace ZhuVN
 	/// </summary>
 	public class Game1 : Game
 	{
+
+		public class Settings{
+			bool Metric = true;
+		}
+
 		private readonly GraphicsDeviceManager graphics;
 
 		public Game1()
